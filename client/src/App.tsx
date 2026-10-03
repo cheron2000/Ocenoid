@@ -142,10 +142,8 @@ export default function App() {
       const k = keys.current;
       const forward = (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0);
       const right = (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0);
-      const moving = forward !== 0 || right !== 0;
-      const movementAngle = moving ? Math.atan2(right, forward) : 0;
-      const yaw = moving ? cameraYaw.current + movementAngle : cameraYaw.current;
-      input.current = { forward, right, yaw, sequence: input.current.sequence + 1 };
+      // Always send a valid yaw — the server preserves facing direction when forward=0, right=0.
+      input.current = { forward, right, yaw: cameraYaw.current, sequence: input.current.sequence + 1 };
       socket.send(JSON.stringify({ type: "input", input: input.current }));
     }, 1000 / tickRate);
     return () => window.clearInterval(interval);

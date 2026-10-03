@@ -12,15 +12,20 @@ export function applyInput(player: PlayerState, input: ClientInput, dt: number, 
   const yaw = finite(input.yaw, player.yaw);
 
   // Convert camera-relative input into world-space movement.
+  // Camera at yaw=0 sits at +Z looking toward -Z, so forward = -Z and right = +X.
   const localForward = forward * scale;
   const localRight = right * scale;
-  const worldX = localRight * Math.cos(yaw) + localForward * Math.sin(yaw);
-  const worldZ = -localForward * Math.cos(yaw) + localRight * Math.sin(yaw);
+  const worldX = localRight * Math.cos(yaw) - localForward * Math.sin(yaw);
+  const worldZ = -localForward * Math.cos(yaw) - localRight * Math.sin(yaw);
+
+  // Only update the player's facing yaw when actually moving.
+  const moving = Math.abs(forward) > 0.001 || Math.abs(right) > 0.001;
+  const facingYaw = moving ? Math.atan2(worldX, -worldZ) : player.yaw;
 
   return {
     ...player,
     x: player.x + worldX * speed * dt,
     z: player.z + worldZ * speed * dt,
-    yaw,
+    yaw: facingYaw,
   };
 }
