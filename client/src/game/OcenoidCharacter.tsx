@@ -1,8 +1,48 @@
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 type Target = { x: number; y: number; z: number; yaw: number };
+
+function createCheckeredTexture(color1: string, color2: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = color1;
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.fillStyle = color2;
+    ctx.fillRect(0, 0, 64, 64);
+    ctx.fillRect(64, 64, 64, 64);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 3);
+  tex.magFilter = THREE.NearestFilter;
+  return tex;
+}
+
+function createFabricTexture(baseColor: string) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = baseColor;
+    ctx.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 15000; i++) {
+      ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+      ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2, 2);
+  return tex;
+}
 
 /**
  * Procedural humanoid character built from primitives.
@@ -59,22 +99,27 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
   const skinColor = "#d7a06b";
   const shoeColor = "#2a2a2a";
 
+  const jacketTexture = useMemo(() => createCheckeredTexture(color, '#ffffff'), [color]);
+  const pantsTexture = useMemo(() => createFabricTexture('#334155'), []);
+  const hairTexture = useMemo(() => createFabricTexture('#3f2b1c'), []);
+  const skinTexture = useMemo(() => createFabricTexture(skinColor), [skinColor]);
+
   return (
     <group ref={root}>
       <group ref={bodyRef}>
         {/* ===== HEAD & FACE ===== */}
         <mesh position={[0, 1.62, 0]}>
           <boxGeometry args={[0.35, 0.35, 0.35]} />
-          <meshStandardMaterial color={skinColor} roughness={0.4} />
+          <meshStandardMaterial map={skinTexture} roughness={0.6} />
         </mesh>
         {/* Hair */}
         <mesh position={[0, 1.78, -0.02]}>
           <boxGeometry args={[0.38, 0.12, 0.4]} />
-          <meshStandardMaterial color="#3f2b1c" roughness={0.8} />
+          <meshStandardMaterial map={hairTexture} roughness={0.9} />
         </mesh>
         <mesh position={[0, 1.68, -0.2]}>
           <boxGeometry args={[0.38, 0.25, 0.1]} />
-          <meshStandardMaterial color="#3f2b1c" roughness={0.8} />
+          <meshStandardMaterial map={hairTexture} roughness={0.9} />
         </mesh>
         {/* Eyes */}
         <mesh position={[-0.08, 1.65, 0.18]}>
@@ -90,7 +135,7 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
         {/* Jacket / Shirt */}
         <mesh position={[0, 1.2, 0]}>
           <boxGeometry args={[0.42, 0.55, 0.25]} />
-          <meshStandardMaterial color={color} roughness={0.7} />
+          <meshStandardMaterial map={jacketTexture} roughness={0.8} />
         </mesh>
         {/* Undershirt peeking out */}
         <mesh position={[0, 1.46, 0.1]}>
@@ -113,11 +158,11 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
         <group position={[-0.28, 1.38, 0]}>
           <mesh ref={leftArmRef} position={[0, -0.2, 0]}>
             <capsuleGeometry args={[0.07, 0.35, 4, 8]} />
-            <meshStandardMaterial color={color} roughness={0.7} />
+            <meshStandardMaterial map={jacketTexture} roughness={0.8} />
             {/* Hand */}
             <mesh position={[0, -0.24, 0]}>
               <boxGeometry args={[0.1, 0.1, 0.1]} />
-              <meshStandardMaterial color={skinColor} />
+              <meshStandardMaterial map={skinTexture} />
             </mesh>
           </mesh>
         </group>
@@ -125,11 +170,11 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
         <group position={[0.28, 1.38, 0]}>
           <mesh ref={rightArmRef} position={[0, -0.2, 0]}>
             <capsuleGeometry args={[0.07, 0.35, 4, 8]} />
-            <meshStandardMaterial color={color} roughness={0.7} />
+            <meshStandardMaterial map={jacketTexture} roughness={0.8} />
             {/* Hand */}
             <mesh position={[0, -0.24, 0]}>
               <boxGeometry args={[0.1, 0.1, 0.1]} />
-              <meshStandardMaterial color={skinColor} />
+              <meshStandardMaterial map={skinTexture} />
             </mesh>
           </mesh>
         </group>
@@ -139,11 +184,11 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
         <group position={[-0.12, 0.88, 0]}>
           <mesh ref={leftLegRef} position={[0, -0.35, 0]}>
             <capsuleGeometry args={[0.08, 0.4, 4, 8]} />
-            <meshStandardMaterial color="#334155" roughness={0.9} />
+            <meshStandardMaterial map={pantsTexture} roughness={0.9} />
             {/* Sneaker */}
             <mesh position={[0, -0.28, 0.04]}>
               <boxGeometry args={[0.14, 0.12, 0.22]} />
-              <meshStandardMaterial color="#f8fafc" />
+              <meshStandardMaterial color="#f8fafc" roughness={0.3} />
             </mesh>
           </mesh>
         </group>
@@ -151,11 +196,11 @@ export function OcenoidCharacter({ target, color = "#55b9d2" }: { target: Target
         <group position={[0.12, 0.88, 0]}>
           <mesh ref={rightLegRef} position={[0, -0.35, 0]}>
             <capsuleGeometry args={[0.08, 0.4, 4, 8]} />
-            <meshStandardMaterial color="#334155" roughness={0.9} />
+            <meshStandardMaterial map={pantsTexture} roughness={0.9} />
             {/* Sneaker */}
             <mesh position={[0, -0.28, 0.04]}>
               <boxGeometry args={[0.14, 0.12, 0.22]} />
-              <meshStandardMaterial color="#f8fafc" />
+              <meshStandardMaterial color="#f8fafc" roughness={0.3} />
             </mesh>
           </mesh>
         </group>
