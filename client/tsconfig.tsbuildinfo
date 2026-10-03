@@ -1,1 +1,1 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/game/ocenoidcharacter.tsx"],"version":"5.9.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/game/boatmodel.tsx","./src/game/ocenoidcharacter.tsx"],"version":"5.9.3"}

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OcenoidCharacter, CHARACTER_PRESETS } from "./game/OcenoidCharacter";
+import { BoatModel } from "./game/BoatModel";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
@@ -80,9 +81,8 @@ function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
   return <>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40, 40]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
-    <mesh position={[0, 0.6, 0]}><boxGeometry args={[4.8, 0.7, 2.5]} /><meshStandardMaterial color="#6b3512" /></mesh>
-    <mesh position={[0, 1.05, 0]}><boxGeometry args={[4.4, 0.24, 2.3]} /><meshStandardMaterial color="#a05a20" /></mesh>
-    <mesh position={[0, 2.4, 0]}><cylinderGeometry args={[0.08, 0.08, 2.8, 16]} /><meshStandardMaterial color="#8a541f" /></mesh>
+    {/* GLB boat replaces the old procedural boat primitives */}
+    <BoatModel position={[0, 0, 0]} scale={1} />
     <mesh position={[12, 0.35, 0]}><cylinderGeometry args={[4, 4, 1.2, 32]} /><meshStandardMaterial color="#4d7022" /></mesh>
     <mesh position={[12, 0.96, 0]}><cylinderGeometry args={[3.5, 3.5, 0.3, 32]} /><meshStandardMaterial color="#aa8b4c" /></mesh>
     {[...players.values()].map((player) => <PlayerMesh key={player.id} target={player} local={player.id === localId} onRef={player.id === localId ? onLocalRef : undefined} />)}
