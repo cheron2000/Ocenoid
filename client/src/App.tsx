@@ -80,7 +80,7 @@ function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; 
 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
   return <>
-    <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[40, 40]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4000, 4000]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
     {/* Procedural boat replaces the old GLB */}
     <BoatModel position={[0, 0, 0]} rotation={[0, 0, 0]} scale={1} />
     <mesh position={[12, 0.35, 0]}><cylinderGeometry args={[4, 4, 1.2, 32]} /><meshStandardMaterial color="#4d7022" /></mesh>
