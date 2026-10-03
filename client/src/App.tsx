@@ -22,7 +22,7 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
 
   useEffect(() => {
     const canvas = gl.domElement;
-    const onDown = (e: MouseEvent) => { if (e.button === 2) { dragging.current = true; canvas.setPointerCapture(e.pointerId); } };
+    const onDown = (e: PointerEvent) => { if (e.button === 2) { dragging.current = true; canvas.setPointerCapture(e.pointerId); } };
     const onMove = (e: PointerEvent) => {
       if (!dragging.current) return;
       yaw.current -= e.movementX * 0.006;
@@ -32,10 +32,10 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
     const onUp = (e: PointerEvent) => { if (e.button === 2) dragging.current = false; if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); };
     const onWheel = (e: WheelEvent) => { e.preventDefault(); distance.current = THREE.MathUtils.clamp(distance.current + e.deltaY * 0.008, 3, 12); };
     const onContext = (e: MouseEvent) => e.preventDefault();
-    canvas.addEventListener("mousedown", onDown); canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("pointerdown", onDown); canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerup", onUp);
     canvas.addEventListener("wheel", onWheel, { passive: false }); canvas.addEventListener("contextmenu", onContext);
     return () => {
-      canvas.removeEventListener("mousedown", onDown); canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("pointerdown", onDown); canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerup", onUp);
       canvas.removeEventListener("wheel", onWheel); canvas.removeEventListener("contextmenu", onContext);
     };
   }, [gl, onYaw]);

@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "exports": {
+    "./network.js": {
+      "types": "./dist/network.d.ts",
+      "default": "./src/network.ts"
+    }
+  },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit"
   }
