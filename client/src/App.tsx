@@ -12,6 +12,14 @@ type TargetMap = Map<string, Player>;
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
 
+// ⚙️ ADJUST YOUR SHIP HERE ⚙️
+// Modify these coordinates to perfectly align the ship with the water and player.
+const SHIP_CONFIG = {
+  position: [0, -1, 0] as [number, number, number],
+  rotation: [0, 0, 0] as [number, number, number], // [x, y, z] in radians (e.g. Math.PI / 2)
+  scale: 1, // Increase or decrease the size of the ship
+};
+
 /**
  * Derive a stable 0-3 slot index from a UUID string.
  * Sums the first 8 hex chars so the result is deterministic across all
@@ -82,7 +90,11 @@ function World({ players, localId, onLocalRef }: { players: TargetMap; localId: 
   return <>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4000, 4000]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
     {/* Imported ship model from zip */}
-    <SailingShip position={[0, -1, 0]} rotation={[0, 0, 0]} scale={1} />
+    <SailingShip 
+      position={SHIP_CONFIG.position} 
+      rotation={SHIP_CONFIG.rotation} 
+      scale={SHIP_CONFIG.scale} 
+    />
     <mesh position={[12, 0.35, 0]}><cylinderGeometry args={[4, 4, 1.2, 32]} /><meshStandardMaterial color="#4d7022" /></mesh>
     <mesh position={[12, 0.96, 0]}><cylinderGeometry args={[3.5, 3.5, 0.3, 32]} /><meshStandardMaterial color="#aa8b4c" /></mesh>
     {[...players.values()].map((player) => <PlayerMesh key={player.id} target={player} local={player.id === localId} onRef={player.id === localId ? onLocalRef : undefined} />)}
