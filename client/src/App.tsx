@@ -10,7 +10,7 @@ type TargetMap = Map<string, Player>;
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
 
-function ThirdPersonCamera({ target }: { target: THREE.Object3D | null }) {
+function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; onYaw: (yaw: number) => void }) {
   const { camera, gl } = useThree();
   const yaw = useRef(0);
   const pitch = useRef(0.28);
@@ -31,6 +31,7 @@ function ThirdPersonCamera({ target }: { target: THREE.Object3D | null }) {
       if (!dragging.current) return;
       yaw.current -= e.movementX * 0.006;
       pitch.current = THREE.MathUtils.clamp(pitch.current - e.movementY * 0.005, -0.15, 1.05);
+      onYaw(yaw.current);
     };
     const onUp = (e: PointerEvent) => {
       if (e.button === 2) dragging.current = false;
@@ -53,7 +54,7 @@ function ThirdPersonCamera({ target }: { target: THREE.Object3D | null }) {
       canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("contextmenu", onContext);
     };
-  }, [gl]);
+  }, [gl, onYaw]);
 
   useFrame((_, delta) => {
     if (!target) return;
@@ -108,7 +109,10 @@ export default function App() {
   const [cameraTarget, setCameraTarget] = useState<THREE.Object3D | null>(null);
   const keys = useRef(new Set<string>());
   const socketRef = useRef<WebSocket | null>(null);
+  const cameraYaw = useRef(0);
   const input = useRef({ forward: 0, right: 0, yaw: 0, sequence: 0 });
+
+  const setCameraYaw = (yaw: number) => { cameraYaw.current = yaw; };
 
   useEffect(() => {
     const socket = new WebSocket(SERVER_URL);
@@ -138,8 +142,10 @@ export default function App() {
       const k = keys.current;
       const forward = (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0);
       const right = (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0);
-      if (forward || right) input.current.yaw = Math.atan2(right, forward);
-      input.current = { ...input.current, forward, right, sequence: input.current.sequence + 1 };
+      const moving = forward !== 0 || right !== 0;
+      const movementAngle = moving ? Math.atan2(right, forward) : 0;
+      const yaw = moving ? cameraYaw.current + movementAngle : cameraYaw.current;
+      input.current = { forward, right, yaw, sequence: input.current.sequence + 1 };
       socket.send(JSON.stringify({ type: "input", input: input.current }));
     }, 1000 / tickRate);
     return () => window.clearInterval(interval);
@@ -150,7 +156,7 @@ export default function App() {
     <section className="scene"><Canvas camera={{ position: [0, 4.2, 7.5], fov: 55 }}>
       <color attach="background" args={["#07141d"]} /><ambientLight intensity={1.5} /><directionalLight position={[5, 10, 5]} intensity={2} />
       <World players={players} localId={localId} onLocalRef={setCameraTarget} />
-      <ThirdPersonCamera target={cameraTarget} />
+      <ThirdPersonCamera target={cameraTarget} onYaw={setCameraYaw} />
     </Canvas></section>
   </main>;
 }
