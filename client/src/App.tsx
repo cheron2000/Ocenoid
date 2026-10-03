@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OcenoidCharacter, CHARACTER_PRESETS } from "./game/OcenoidCharacter";
-import { SailingShip } from "./game/SailingShipModel";
+import { BoatModel } from "./game/BoatModel";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
@@ -89,8 +89,8 @@ function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
   return <>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4000, 4000]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
-    {/* Imported ship model from zip */}
-    <SailingShip 
+    {/* Reverted to optimized procedural boat to fix webpage freeze */}
+    <BoatModel 
       position={SHIP_CONFIG.position} 
       rotation={SHIP_CONFIG.rotation} 
       scale={SHIP_CONFIG.scale} 
