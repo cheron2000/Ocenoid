@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { OcenoidCharacter, CHARACTER_PRESETS } from "./game/OcenoidCharacter";
-import { BoatModel } from "./game/BoatModel";
+import { SailingShip } from "./game/SailingShipModel";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
@@ -81,8 +81,8 @@ function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
   return <>
     <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[4000, 4000]} /><meshStandardMaterial color="#0b6f8a" roughness={0.3} /></mesh>
-    {/* Procedural boat replaces the old GLB */}
-    <BoatModel position={[0, 0, 0]} rotation={[0, 0, 0]} scale={1} />
+    {/* Imported ship model from zip */}
+    <SailingShip position={[0, -1, 0]} rotation={[0, 0, 0]} scale={1} />
     <mesh position={[12, 0.35, 0]}><cylinderGeometry args={[4, 4, 1.2, 32]} /><meshStandardMaterial color="#4d7022" /></mesh>
     <mesh position={[12, 0.96, 0]}><cylinderGeometry args={[3.5, 3.5, 0.3, 32]} /><meshStandardMaterial color="#aa8b4c" /></mesh>
     {[...players.values()].map((player) => <PlayerMesh key={player.id} target={player} local={player.id === localId} onRef={player.id === localId ? onLocalRef : undefined} />)}
