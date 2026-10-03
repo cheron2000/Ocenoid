@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { WebSocketServer, WebSocket } from "ws";
 import type { ClientMessage, PlayerState, ServerMessage } from "@ocenoid/shared/network.js";
+import { applyInput } from "./movement.js";
 
 const port = Number(process.env.PORT ?? 8787);
 const maxPlayers = 4;
@@ -65,11 +66,7 @@ setInterval(() => {
   for (const [id, player] of players) {
     const input = inputs.get(id);
     if (!input) continue;
-    const length = Math.hypot(input.forward, input.right);
-    const scale = length > 1 ? 1 / length : 1;
-    player.x += input.right * scale * moveSpeed * dt;
-    player.z -= input.forward * scale * moveSpeed * dt;
-    player.yaw = input.yaw;
+    players.set(id, applyInput(player, { ...input, sequence: 0 }, dt, moveSpeed));
   }
   broadcast({ type: "snapshot", serverTick, players: [...players.values()] });
 }, tickMs);
