@@ -62,14 +62,25 @@ function World({ players }: { players: Player[] }) {
 }
 
 export default function App() {
-  const socket = useMemo(() => new WebSocket(SERVER_URL), []);
   const [localId, setLocalId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const localPosition = useRef<Player>({ id: "", x: 0, y: 1.5, z: 0, yaw: 0 });
+  const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    const socket = new WebSocket(SERVER_URL);
+    socketRef.current = socket;
+
     socket.onopen = () => setConnectionError(null);
+    
+    socket.onerror = () => setConnectionError(`Cannot connect to ${SERVER_URL}`);
+    
+    socket.onclose = (event) => {
+      if (event.code === 1008) setConnectionError("Room is full. Ocenoid supports a maximum of 4 players.");
+      else if (!localPosition.current.id) setConnectionError(`Connection closed. Check that the host server is running at ${SERVER_URL}.`);
+    };
+
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerMessage;
       if (message.type === "welcome") {
@@ -78,19 +89,19 @@ export default function App() {
       }
       if (message.type === "snapshot") setPlayers(message.players);
     };
-    socket.onerror = () => setConnectionError(`Cannot connect to ${SERVER_URL}`);
-    socket.onclose = (event) => {
-      if (event.code === 1008) setConnectionError("Room is full. Ocenoid supports a maximum of 4 players.");
-      else if (!localId) setConnectionError(`Connection closed. Check that the host server is running at ${SERVER_URL}.`);
+
+    return () => {
+      socket.close();
+      socketRef.current = null;
     };
-    return () => socket.close();
-  }, [socket, localId]);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const speed = 0.25;
       const p = localPosition.current;
-      if (!p.id || socket.readyState !== WebSocket.OPEN) return;
+      const socket = socketRef.current;
+      if (!p.id || !socket || socket.readyState !== WebSocket.OPEN) return;
       if (event.key === "w" || event.key === "ArrowUp") p.z -= speed;
       if (event.key === "s" || event.key === "ArrowDown") p.z += speed;
       if (event.key === "a" || event.key === "ArrowLeft") p.x -= speed;
@@ -99,7 +110,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [socket]);
+  }, []);
 
   return (
     <main className="app">
