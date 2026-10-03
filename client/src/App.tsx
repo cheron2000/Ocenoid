@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { OcenoidCharacter } from "./game/OcenoidCharacter";
+import { OcenoidCharacter, CHARACTER_PRESETS } from "./game/OcenoidCharacter";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
@@ -10,6 +10,18 @@ type ServerMessage =
 type TargetMap = Map<string, Player>;
 
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
+
+/**
+ * Derive a stable 0-3 slot index from a UUID string.
+ * Sums the first 8 hex chars so the result is deterministic across all
+ * clients without needing any server-side slot tracking.
+ */
+function uuidToSlot(id: string): number {
+  const hex = id.replace(/-/g, "").slice(0, 8);
+  let sum = 0;
+  for (const ch of hex) sum += parseInt(ch, 16);
+  return sum % CHARACTER_PRESETS.length;
+}
 
 function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; onYaw: (yaw: number) => void }) {
   const { camera, gl } = useThree();
@@ -55,13 +67,14 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
 
 function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; onRef?: (object: THREE.Group | null) => void }) {
   const group = useRef<THREE.Group>(null);
+  const appearance = CHARACTER_PRESETS[uuidToSlot(target.id)];
   useEffect(() => { if (local && onRef) onRef(group.current); return () => { if (local && onRef) onRef(null); }; }, [local, onRef]);
   useFrame((_, delta) => {
     if (!group.current) return;
     // Smoothly interpolate the wrapper group's position for the camera to follow
     group.current.position.lerp(new THREE.Vector3(target.x, target.y, target.z), 1 - Math.exp(-12 * delta));
   });
-  return <group ref={group}><OcenoidCharacter target={target} color={local ? "#ffffff" : "#55b9d2"} /></group>;
+  return <group ref={group}><OcenoidCharacter target={target} appearance={appearance} /></group>;
 }
 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
