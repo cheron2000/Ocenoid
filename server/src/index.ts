@@ -16,14 +16,14 @@ let serverTick = 0;
 
 /**
  * Deck spawn positions derived from the GLB (PlayerSpawn_1–4 node world coords).
- * Y is set to deck surface height (≈1.2) so characters land on the deck.
- * X/Z come from the GLB spawn nodes; the boat sits at world origin.
+ * Deck surface = hull_top (1.15) + boat_y_offset (−0.2) = 0.95.
+ * Spawn Y set to 1.1 so characters land cleanly on deck without clipping.
  */
 const SPAWN_POSITIONS: Array<{ x: number; y: number; z: number }> = [
-  { x: -1.7, y: 1.2, z: -1.12 },
-  { x: -0.6, y: 1.2, z: -1.12 },
-  { x:  0.6, y: 1.2, z: -1.12 },
-  { x:  1.7, y: 1.2, z: -1.12 },
+  { x: -1.7, y: 1.1, z: -1.12 },
+  { x: -0.6, y: 1.1, z: -1.12 },
+  { x:  0.6, y: 1.1, z: -1.12 },
+  { x:  1.7, y: 1.1, z: -1.12 },
 ];
 
 /** Names matching the four OcenoidCharacter appearance presets (slot order). */

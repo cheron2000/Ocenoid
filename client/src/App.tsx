@@ -15,11 +15,12 @@ type TargetMap = Map<string, Player>;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
 
 // ─── Boat placement ───────────────────────────────────────────────────────────
-// GLB hull Y range: ~0 to 1.25 world units, deck surface at ~y=1.15.
-// We offset the boat down by 1 so the keel sits below the ocean plane (y=0)
-// and the deck surface lands at roughly y=0.15 above the water.
+// GLB hull Y range: −1.25 (keel) to +1.15 (deck). The ocean wave shader
+// displaces vertices up to ±0.64 units. We raise the boat so the deck
+// (hull_top + offset = 1.15 − 0.2 = 0.95) clears the highest wave crest (0.64).
+// Keel sits at −1.25 − 0.2 = −1.45, naturally below the waterline.
 const SHIP_CONFIG = {
-  position: [0, -1, 0] as [number, number, number],
+  position: [0, -0.2, 0] as [number, number, number],
   rotation: [0, 0, 0] as [number, number, number],
   scale: 1,
 };

@@ -14,22 +14,22 @@ const vertexShader = /* glsl */ `
     vec3 pos = position;
 
     // Two sine-wave octaves in world XZ
-    float wave1 = sin(pos.x * 0.35 + uTime * 1.1) * cos(pos.z * 0.28 + uTime * 0.8) * 0.38;
-    float wave2 = sin(pos.x * 0.72 + uTime * 1.7 + 1.3) * cos(pos.z * 0.55 + uTime * 1.3) * 0.18;
-    float wave3 = sin(pos.x * 1.40 + uTime * 2.2 + 2.7) * cos(pos.z * 1.10 + uTime * 1.9) * 0.08;
+    float wave1 = sin(pos.x * 0.35 + uTime * 1.1) * cos(pos.z * 0.28 + uTime * 0.8) * 0.22;
+    float wave2 = sin(pos.x * 0.72 + uTime * 1.7 + 1.3) * cos(pos.z * 0.55 + uTime * 1.3) * 0.10;
+    float wave3 = sin(pos.x * 1.40 + uTime * 2.2 + 2.7) * cos(pos.z * 1.10 + uTime * 1.9) * 0.04;
 
     pos.y += wave1 + wave2 + wave3;
 
     // Approx normal via finite differences (offset 0.1 m)
-    float dxW = cos(pos.x * 0.35 + uTime * 1.1) * cos(pos.z * 0.28 + uTime * 0.8) * 0.35 * 0.38
-              + cos(pos.x * 0.72 + uTime * 1.7 + 1.3) * cos(pos.z * 0.55 + uTime * 1.3) * 0.72 * 0.18
-              + cos(pos.x * 1.40 + uTime * 2.2 + 2.7) * cos(pos.z * 1.10 + uTime * 1.9) * 1.40 * 0.08;
-    float dzW = sin(pos.x * 0.35 + uTime * 1.1) * (-sin(pos.z * 0.28 + uTime * 0.8)) * 0.28 * 0.38
-              + sin(pos.x * 0.72 + uTime * 1.7 + 1.3) * (-sin(pos.z * 0.55 + uTime * 1.3)) * 0.55 * 0.18
-              + sin(pos.x * 1.40 + uTime * 2.2 + 2.7) * (-sin(pos.z * 1.10 + uTime * 1.9)) * 1.10 * 0.08;
+    float dxW = cos(pos.x * 0.35 + uTime * 1.1) * cos(pos.z * 0.28 + uTime * 0.8) * 0.35 * 0.22
+              + cos(pos.x * 0.72 + uTime * 1.7 + 1.3) * cos(pos.z * 0.55 + uTime * 1.3) * 0.72 * 0.10
+              + cos(pos.x * 1.40 + uTime * 2.2 + 2.7) * cos(pos.z * 1.10 + uTime * 1.9) * 1.40 * 0.04;
+    float dzW = sin(pos.x * 0.35 + uTime * 1.1) * (-sin(pos.z * 0.28 + uTime * 0.8)) * 0.28 * 0.22
+              + sin(pos.x * 0.72 + uTime * 1.7 + 1.3) * (-sin(pos.z * 0.55 + uTime * 1.3)) * 0.55 * 0.10
+              + sin(pos.x * 1.40 + uTime * 2.2 + 2.7) * (-sin(pos.z * 1.10 + uTime * 1.9)) * 1.10 * 0.04;
 
     vNormal    = normalize(vec3(-dxW, 1.0, -dzW));
-    vWaveCrest = clamp((wave1 + wave2 + wave3 + 0.55) / 1.1, 0.0, 1.0);
+    vWaveCrest = clamp((wave1 + wave2 + wave3 + 0.33) / 0.66, 0.0, 1.0);
     vWorldPos  = (modelMatrix * vec4(pos, 1.0)).xyz;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
