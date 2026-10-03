@@ -1,0 +1,7 @@
+# Ocenoid - Python AI/Simulation Services
+# Phase 0: reserved for future AI/NPC systems
+
+fastapi
+uvicorn
+pydantic
+numpy
