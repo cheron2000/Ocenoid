@@ -1,25 +1,34 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
-  | { type: "welcome"; id: string }
-  | { type: "snapshot"; players: Player[] };
+  | { type: "welcome"; id: string; tickRate: number }
+  | { type: "snapshot"; serverTick: number; players: Player[] };
 
+type TargetMap = Map<string, Player>;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
+const MOVE_SPEED = 4;
 
-function LocalPlayer({ position }: { position: Player }) {
+function PlayerMesh({ target, local }: { target: Player; local: boolean }) {
   const group = useRef<THREE.Group>(null);
-  useFrame(() => {
-    if (group.current) group.current.position.set(position.x, position.y, position.z);
+  const current = useRef(new THREE.Vector3(target.x, target.y, target.z));
+
+  useFrame((_, delta) => {
+    if (!group.current) return;
+    const desired = new THREE.Vector3(target.x, target.y, target.z);
+    current.current.lerp(desired, 1 - Math.exp(-12 * delta));
+    group.current.position.copy(current.current);
+    group.current.rotation.y = target.yaw;
   });
+
   return (
-    <group ref={group} rotation-y={position.yaw}>
+    <group ref={group}>
       <mesh position={[0, 0.9, 0]}>
         <capsuleGeometry args={[0.28, 0.8, 4, 8]} />
-        <meshStandardMaterial color="#f2f2f2" />
+        <meshStandardMaterial color={local ? "#ffffff" : "#55b9d2"} />
       </mesh>
       <mesh position={[0, 1.55, 0]}>
         <sphereGeometry args={[0.32, 16, 12]} />
@@ -29,7 +38,7 @@ function LocalPlayer({ position }: { position: Player }) {
   );
 }
 
-function World({ players }: { players: Player[] }) {
+function World({ players, localId }: { players: TargetMap; localId: string | null }) {
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -56,16 +65,20 @@ function World({ players }: { players: Player[] }) {
         <cylinderGeometry args={[3.5, 3.5, 0.3, 32]} />
         <meshStandardMaterial color="#aa8b4c" />
       </mesh>
-      {players.map((player) => <LocalPlayer key={player.id} position={player} />)}
+      {[...players.values()].map((player) => (
+        <PlayerMesh key={player.id} target={player} local={player.id === localId} />
+      ))}
     </>
   );
 }
 
 export default function App() {
   const [localId, setLocalId] = useState<string | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [tickRate, setTickRate] = useState(20);
+  const [players, setPlayers] = useState<TargetMap>(new Map());
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const localPosition = useRef<Player>({ id: "", x: 0, y: 1.5, z: 0, yaw: 0 });
+  const input = useRef({ forward: 0, right: 0, yaw: 0, sequence: 0 });
+  const keys = useRef(new Set<string>());
   const socketRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -73,21 +86,19 @@ export default function App() {
     socketRef.current = socket;
 
     socket.onopen = () => setConnectionError(null);
-    
     socket.onerror = () => setConnectionError(`Cannot connect to ${SERVER_URL}`);
-    
     socket.onclose = (event) => {
-      if (event.code === 1008) setConnectionError("Room is full. Ocenoid supports a maximum of 4 players.");
-      else if (!localPosition.current.id) setConnectionError(`Connection closed. Check that the host server is running at ${SERVER_URL}.`);
+      if (event.code === 1008) setConnectionError("Room is full. Maximum 4 players.");
+      else if (!localId) setConnectionError(`Connection closed. Check ${SERVER_URL}.`);
     };
-
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerMessage;
       if (message.type === "welcome") {
         setLocalId(message.id);
-        localPosition.current.id = message.id;
+        setTickRate(message.tickRate);
+      } else if (message.type === "snapshot") {
+        setPlayers(new Map(message.players.map((player) => [player.id, player])));
       }
-      if (message.type === "snapshot") setPlayers(message.players);
     };
 
     return () => {
@@ -97,36 +108,42 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const speed = 0.25;
-      const p = localPosition.current;
-      const socket = socketRef.current;
-      if (!p.id || !socket || socket.readyState !== WebSocket.OPEN) return;
-      if (event.key === "w" || event.key === "ArrowUp") p.z -= speed;
-      if (event.key === "s" || event.key === "ArrowDown") p.z += speed;
-      if (event.key === "a" || event.key === "ArrowLeft") p.x -= speed;
-      if (event.key === "d" || event.key === "ArrowRight") p.x += speed;
-      socket.send(JSON.stringify({ type: "move", state: p }));
+    const down = (event: KeyboardEvent) => keys.current.add(event.key.toLowerCase());
+    const up = (event: KeyboardEvent) => keys.current.delete(event.key.toLowerCase());
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const socket = socketRef.current;
+      if (!socket || socket.readyState !== WebSocket.OPEN || !localId) return;
+      const k = keys.current;
+      const forward = (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0);
+      const right = (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0);
+      input.current = { forward, right, yaw: input.current.yaw, sequence: input.current.sequence + 1 };
+      socket.send(JSON.stringify({ type: "input", input: input.current }));
+    }, 1000 / tickRate);
+    return () => window.clearInterval(interval);
+  }, [localId, tickRate]);
 
   return (
     <main className="app">
       <header className="hud">
         <strong>OCENOID</strong>
-        <span>
-          LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.length}/4 · WASD
-          {connectionError ? ` · ${connectionError}` : ""}
-        </span>
+        <span>LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.size}/4 · Server: {tickRate}Hz · WASD</span>
+        {connectionError && <span> · {connectionError}</span>}
       </header>
       <section className="scene">
         <Canvas camera={{ position: [8, 7, 10], fov: 50 }}>
           <color attach="background" args={["#07141d"]} />
           <ambientLight intensity={1.5} />
           <directionalLight position={[5, 10, 5]} intensity={2} />
-          <World players={players} />
+          <World players={players} localId={localId} />
           <OrbitControls />
         </Canvas>
       </section>
