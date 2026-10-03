@@ -8,7 +8,7 @@ type ServerMessage =
   | { type: "welcome"; id: string }
   | { type: "snapshot"; players: Player[] };
 
-const SERVER_URL = `ws://${window.location.hostname}:8787`;
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
 
 function LocalPlayer({ position }: { position: Player }) {
   const group = useRef<THREE.Group>(null);
@@ -29,7 +29,7 @@ function LocalPlayer({ position }: { position: Player }) {
   );
 }
 
-function World({ players, localId }: { players: Player[]; localId: string | null }) {
+function World({ players }: { players: Player[] }) {
   return (
     <>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -56,9 +56,7 @@ function World({ players, localId }: { players: Player[]; localId: string | null
         <cylinderGeometry args={[3.5, 3.5, 0.3, 32]} />
         <meshStandardMaterial color="#aa8b4c" />
       </mesh>
-      {players.map((player) => (
-        <LocalPlayer key={player.id} position={player} />
-      ))}
+      {players.map((player) => <LocalPlayer key={player.id} position={player} />)}
     </>
   );
 }
@@ -67,9 +65,11 @@ export default function App() {
   const socket = useMemo(() => new WebSocket(SERVER_URL), []);
   const [localId, setLocalId] = useState<string | null>(null);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const localPosition = useRef<Player>({ id: "", x: 0, y: 1.5, z: 0, yaw: 0 });
 
   useEffect(() => {
+    socket.onopen = () => setConnectionError(null);
     socket.onmessage = (event) => {
       const message = JSON.parse(event.data) as ServerMessage;
       if (message.type === "welcome") {
@@ -78,8 +78,13 @@ export default function App() {
       }
       if (message.type === "snapshot") setPlayers(message.players);
     };
+    socket.onerror = () => setConnectionError(`Cannot connect to ${SERVER_URL}`);
+    socket.onclose = (event) => {
+      if (event.code === 1008) setConnectionError("Room is full. Ocenoid supports a maximum of 4 players.");
+      else if (!localId) setConnectionError(`Connection closed. Check that the host server is running at ${SERVER_URL}.`);
+    };
     return () => socket.close();
-  }, [socket]);
+  }, [socket, localId]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -100,14 +105,17 @@ export default function App() {
     <main className="app">
       <header className="hud">
         <strong>OCENOID</strong>
-        <span>LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.length}/4 · WASD</span>
+        <span>
+          LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.length}/4 · WASD
+          {connectionError ? ` · ${connectionError}` : ""}
+        </span>
       </header>
       <section className="scene">
         <Canvas camera={{ position: [8, 7, 10], fov: 50 }}>
           <color attach="background" args={["#07141d"]} />
           <ambientLight intensity={1.5} />
           <directionalLight position={[5, 10, 5]} intensity={2} />
-          <World players={players} localId={localId} />
+          <World players={players} />
           <OrbitControls />
         </Canvas>
       </section>
