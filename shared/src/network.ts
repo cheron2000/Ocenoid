@@ -7,7 +7,7 @@ export type PlayerState = {
 };
 
 export type ServerMessage =
-  | { type: "welcome"; message: string }
+  | { type: "welcome"; id: string }
   | { type: "snapshot"; players: PlayerState[] };
 
 export type ClientMessage =
