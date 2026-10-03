@@ -55,15 +55,13 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
 
 function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; onRef?: (object: THREE.Group | null) => void }) {
   const group = useRef<THREE.Group>(null);
-  const current = useRef(new THREE.Vector3(target.x, target.y, target.z));
   useEffect(() => { if (local && onRef) onRef(group.current); return () => { if (local && onRef) onRef(null); }; }, [local, onRef]);
   useFrame((_, delta) => {
     if (!group.current) return;
-    current.current.lerp(new THREE.Vector3(target.x, target.y, target.z), 1 - Math.exp(-12 * delta));
-    group.current.position.copy(current.current);
-    group.current.rotation.y = target.yaw;
+    // Smoothly interpolate the wrapper group's position for the camera to follow
+    group.current.position.lerp(new THREE.Vector3(target.x, target.y, target.z), 1 - Math.exp(-12 * delta));
   });
-  return <group ref={group}><OcenoidCharacter target={target} /></group>;
+  return <group ref={group}><OcenoidCharacter target={target} color={local ? "#ffffff" : "#55b9d2"} /></group>;
 }
 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
