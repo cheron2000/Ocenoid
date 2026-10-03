@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@ocenoid/shared": "workspace:*",
+    "@ocenoid/shared": "*",
     "ws": "^8.18.3"
   },
   "devDependencies": {
