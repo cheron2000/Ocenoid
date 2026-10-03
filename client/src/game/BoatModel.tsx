@@ -20,7 +20,7 @@ const GLB_URL = "/boat.glb";
  */
 const EXCLUDE_PREFIXES = [
   "Island_", "Ocean_", "Player_", "PlayerSpawn_",
-  "Web_", "Web ", "Delivery_", "Fill_Light", "Key_Sun",
+  "Delivery_", "Fill_Light", "Key_Sun",
   "Ocenoid_Player_Rig", "root", "spine", "neck", "head",
   "upper_arm", "lower_arm", "thigh", "shin",
   "BoatCollision_",
