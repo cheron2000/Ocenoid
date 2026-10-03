@@ -23,16 +23,17 @@ Ocenoid is a 4-player LAN ocean-survival sandbox. Players begin together on a bo
 - [x] Cross-computer LAN connectivity
 - [x] Basic WASD movement synchronization
 
-### 1B — Networked movement — NEXT
-- [ ] Server-authoritative movement validation
-- [ ] Fixed-rate network snapshots
-- [ ] Client-side interpolation
-- [ ] Input/state separation
-- [ ] Basic latency handling
+### 1B — Networked movement — IN PROGRESS
+- [x] Server-authoritative movement validation
+- [x] Fixed-rate network snapshots (20 Hz)
+- [x] Client-side interpolation
+- [x] Input/state separation
+- [x] Basic latency handling through interpolation
 - [ ] Disconnect/reconnect handling
 - [ ] Automated 4-client protocol test
+- [x] Movement invariant tests
 
-## Phase 2 — Player & Boat
+## Phase 2 — Player & Boat — NEXT
 
 - [ ] Import Blender character as GLB
 - [ ] Character skeleton/rig
@@ -122,6 +123,6 @@ Ocenoid is a 4-player LAN ocean-survival sandbox. Players begin together on a bo
 
 ## Current Milestone
 
-**Phase 1B — Networked movement.**
+**Finish Phase 1B, then begin Phase 2 — Player & Boat.**
 
-The LAN connection has been verified across different computers. The immediate objective is to make movement authoritative, smooth, bounded to four players, and resilient to normal LAN latency before adding gameplay systems.
+LAN connectivity and smooth authoritative movement have been verified across different computers. Movement invariants are now covered by server-side tests. The remaining Phase 1B work is reconnect/disconnect behavior and an automated multiplayer protocol test.
