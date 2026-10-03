@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { OcenoidCharacter } from "./game/OcenoidCharacter";
 
 type Player = { id: string; x: number; y: number; z: number; yaw: number };
 type ServerMessage =
@@ -21,45 +22,27 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
 
   useEffect(() => {
     const canvas = gl.domElement;
-    const onDown = (e: MouseEvent) => {
-      if (e.button === 2) {
-        dragging.current = true;
-        canvas.setPointerCapture(e.pointerId);
-      }
-    };
+    const onDown = (e: MouseEvent) => { if (e.button === 2) { dragging.current = true; canvas.setPointerCapture(e.pointerId); } };
     const onMove = (e: PointerEvent) => {
       if (!dragging.current) return;
       yaw.current -= e.movementX * 0.006;
       pitch.current = THREE.MathUtils.clamp(pitch.current - e.movementY * 0.005, -0.15, 1.05);
       onYaw(yaw.current);
     };
-    const onUp = (e: PointerEvent) => {
-      if (e.button === 2) dragging.current = false;
-      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
-    };
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      distance.current = THREE.MathUtils.clamp(distance.current + e.deltaY * 0.008, 3, 12);
-    };
+    const onUp = (e: PointerEvent) => { if (e.button === 2) dragging.current = false; if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId); };
+    const onWheel = (e: WheelEvent) => { e.preventDefault(); distance.current = THREE.MathUtils.clamp(distance.current + e.deltaY * 0.008, 3, 12); };
     const onContext = (e: MouseEvent) => e.preventDefault();
-    canvas.addEventListener("mousedown", onDown);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerup", onUp);
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    canvas.addEventListener("contextmenu", onContext);
+    canvas.addEventListener("mousedown", onDown); canvas.addEventListener("pointermove", onMove); canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("wheel", onWheel, { passive: false }); canvas.addEventListener("contextmenu", onContext);
     return () => {
-      canvas.removeEventListener("mousedown", onDown);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("wheel", onWheel);
-      canvas.removeEventListener("contextmenu", onContext);
+      canvas.removeEventListener("mousedown", onDown); canvas.removeEventListener("pointermove", onMove); canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("wheel", onWheel); canvas.removeEventListener("contextmenu", onContext);
     };
   }, [gl, onYaw]);
 
   useFrame((_, delta) => {
     if (!target) return;
-    const offset = new THREE.Vector3(0, 0, distance.current);
-    offset.applyEuler(new THREE.Euler(pitch.current, yaw.current, 0, "YXZ"));
+    const offset = new THREE.Vector3(0, 0, distance.current).applyEuler(new THREE.Euler(pitch.current, yaw.current, 0, "YXZ"));
     const desired = target.position.clone().add(new THREE.Vector3(0, 1.4, 0)).add(offset);
     current.current.lerp(desired, 1 - Math.exp(-10 * delta));
     camera.position.copy(current.current);
@@ -73,20 +56,14 @@ function ThirdPersonCamera({ target, onYaw }: { target: THREE.Object3D | null; o
 function PlayerMesh({ target, local, onRef }: { target: Player; local: boolean; onRef?: (object: THREE.Group | null) => void }) {
   const group = useRef<THREE.Group>(null);
   const current = useRef(new THREE.Vector3(target.x, target.y, target.z));
-  useEffect(() => {
-    if (local && onRef) onRef(group.current);
-    return () => { if (local && onRef) onRef(null); };
-  }, [local, onRef]);
+  useEffect(() => { if (local && onRef) onRef(group.current); return () => { if (local && onRef) onRef(null); }; }, [local, onRef]);
   useFrame((_, delta) => {
     if (!group.current) return;
     current.current.lerp(new THREE.Vector3(target.x, target.y, target.z), 1 - Math.exp(-12 * delta));
     group.current.position.copy(current.current);
     group.current.rotation.y = target.yaw;
   });
-  return <group ref={group}>
-    <mesh position={[0, 0.9, 0]}><capsuleGeometry args={[0.28, 0.8, 4, 8]} /><meshStandardMaterial color={local ? "#ffffff" : "#55b9d2"} /></mesh>
-    <mesh position={[0, 1.55, 0]}><sphereGeometry args={[0.32, 16, 12]} /><meshStandardMaterial color="#d7a06b" /></mesh>
-  </group>;
+  return <group ref={group}><OcenoidCharacter target={target} /></group>;
 }
 
 function World({ players, localId, onLocalRef }: { players: TargetMap; localId: string | null; onLocalRef: (object: THREE.Group | null) => void }) {
@@ -111,7 +88,6 @@ export default function App() {
   const socketRef = useRef<WebSocket | null>(null);
   const cameraYaw = useRef(0);
   const input = useRef({ forward: 0, right: 0, yaw: 0, sequence: 0 });
-
   const setCameraYaw = (yaw: number) => { cameraYaw.current = yaw; };
 
   useEffect(() => {
@@ -142,7 +118,6 @@ export default function App() {
       const k = keys.current;
       const forward = (k.has("w") || k.has("arrowup") ? 1 : 0) - (k.has("s") || k.has("arrowdown") ? 1 : 0);
       const right = (k.has("d") || k.has("arrowright") ? 1 : 0) - (k.has("a") || k.has("arrowleft") ? 1 : 0);
-      // Always send a valid yaw — the server preserves facing direction when forward=0, right=0.
       input.current = { forward, right, yaw: cameraYaw.current, sequence: input.current.sequence + 1 };
       socket.send(JSON.stringify({ type: "input", input: input.current }));
     }, 1000 / tickRate);
