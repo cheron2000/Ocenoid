@@ -64,12 +64,12 @@ function mkSailTexture(): THREE.CanvasTexture {
 }
 
 // Custom curved path for the boat's top railing
-class BoatRailingCurve extends THREE.Curve<THREE.Vector3> {
-  getPoint(t: number, optionalTarget = new THREE.Vector3()) {
-    const angle = 2 * Math.PI * t;
-    // X radius = 5.8, Z radius = 14
-    return optionalTarget.set(5.8 * Math.cos(angle), 0, 14 * Math.sin(angle));
-  }
+const boatRailingPoints: THREE.Vector3[] = Array.from({ length: 65 }, (_, i) => {
+  const angle = (i / 64) * 2 * Math.PI;
+  return new THREE.Vector3(5.8 * Math.cos(angle), 0, 14 * Math.sin(angle));
+});
+class BoatRailingCurve extends THREE.CatmullRomCurve3 {
+  constructor() { super(boatRailingPoints, true); }
 }
 
 // --- Boat Component ---

@@ -40,16 +40,22 @@ Ocenoid is a 4-player LAN ocean-survival sandbox. Players begin together on a bo
 - [x] 4-player limit verified
 - [x] Reconnect after disconnect verified
 
-## Phase 2 — Player & Boat — CURRENT
+## Phase 2 — Player & Boat — IN PROGRESS
 
-- [ ] Import Blender character as GLB
-- [ ] Character skeleton/rig
-- [ ] Third-person camera
-- [ ] Idle/walk/run animations
-- [ ] Player spawning on the starting boat
-- [ ] Boat collision and walkable deck
-- [ ] Player names/identifiers
-- [ ] Basic interaction system
+- [x] Import Blender character as GLB → replaced with procedural OcenoidCharacter (4 presets)
+- [x] Third-person camera (RMB drag, scroll zoom)
+- [x] Idle/walk/run animations (procedural arm/leg swing + idle bob)
+- [x] Unique per-player appearance (skin, hair, outfit, pattern, shoes)
+- [x] Player name labels (Html billboard above each character)
+- [x] GLB boat model loaded from uploaded prototype asset
+- [x] Player spawn positions on deck (4 distinct spots from GLB PlayerSpawn nodes)
+- [x] Deck collision via downward raycast — local player Y snaps to deck surface
+- [x] Camera collision raycast — pulls camera in when boat geometry blocks view
+- [x] Interaction prompt system skeleton — [E] prompts on SteeringWheel, CraftBench, Storage
+- [x] Ocean surface shader — animated GPU vertex waves, fresnel, foam crest
+- [ ] Character skeleton/rig (bone-based, awaiting proper GLB character export)
+- [ ] Player name input / custom names
+- [ ] Boat collision for remote players (currently server-authoritative flat plane)
 
 ## Phase 3 — Ocean World
 
@@ -130,6 +136,6 @@ Ocenoid is a 4-player LAN ocean-survival sandbox. Players begin together on a bo
 
 ## Current Milestone
 
-**Phase 2 — Player & Boat.**
+**Phase 2 — Player & Boat — nearly complete.**
 
-Phase 1 multiplayer foundation is complete and verified. The next milestone is to replace the temporary player primitive with the Blender character asset, establish a third-person controller and camera, then place all four players on the starting boat with proper collision and interaction foundations.
+Core systems done: 4-player LAN sync, unique character appearances, GLB boat, deck collision, camera collision, player name labels, interaction prompt skeleton, animated ocean shader. Remaining: bone-based character rig (needs GLB character export), custom name input, remote player deck collision.

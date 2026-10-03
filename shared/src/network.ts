@@ -4,6 +4,8 @@ export type PlayerState = {
   y: number;
   z: number;
   yaw: number;
+  /** Display name shown above the character */
+  name: string;
 };
 
 export type ClientInput = {
@@ -14,7 +16,7 @@ export type ClientInput = {
 };
 
 export type ServerMessage =
-  | { type: "welcome"; id: string; tickRate: number }
+  | { type: "welcome"; id: string; tickRate: number; spawnIndex: number; name: string }
   | { type: "snapshot"; serverTick: number; players: PlayerState[] };
 
 export type ClientMessage =
