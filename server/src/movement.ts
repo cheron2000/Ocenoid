@@ -9,11 +9,18 @@ export function applyInput(player: PlayerState, input: ClientInput, dt: number, 
   const right = finite(input.right, 0);
   const length = Math.hypot(forward, right);
   const scale = length > 1 ? 1 / length : 1;
+  const yaw = finite(input.yaw, player.yaw);
+
+  // Convert camera-relative input into world-space movement.
+  const localForward = forward * scale;
+  const localRight = right * scale;
+  const worldX = localRight * Math.cos(yaw) + localForward * Math.sin(yaw);
+  const worldZ = -localForward * Math.cos(yaw) + localRight * Math.sin(yaw);
 
   return {
     ...player,
-    x: player.x + right * scale * speed * dt,
-    z: player.z - forward * scale * speed * dt,
-    yaw: finite(input.yaw, player.yaw),
+    x: player.x + worldX * speed * dt,
+    z: player.z + worldZ * speed * dt,
+    yaw,
   };
 }
