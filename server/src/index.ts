@@ -4,8 +4,13 @@ import type { ClientMessage, PlayerState, ServerMessage } from "@ocenoid/shared/
 
 const port = Number(process.env.PORT ?? 8787);
 const maxPlayers = 4;
+const tickRate = 20;
+const tickMs = 1000 / tickRate;
+const moveSpeed = 4;
 const wss = new WebSocketServer({ host: "0.0.0.0", port });
 const players = new Map<string, PlayerState>();
+const inputs = new Map<string, { forward: number; right: number; yaw: number }>();
+let serverTick = 0;
 
 function broadcast(message: ServerMessage) {
   const payload = JSON.stringify(message);
@@ -21,12 +26,11 @@ wss.on("connection", (socket) => {
   }
 
   const id = randomUUID();
-  const player: PlayerState = { id, x: 0, y: 1.5, z: 0, yaw: 0 };
-  players.set(id, player);
-  console.log(`Player connected: ${id} (${players.size}/${maxPlayers})`);
+  players.set(id, { id, x: 0, y: 1.5, z: 0, yaw: 0 });
+  inputs.set(id, { forward: 0, right: 0, yaw: 0 });
 
-  socket.send(JSON.stringify({ type: "welcome", id }));
-  broadcast({ type: "snapshot", players: [...players.values()] });
+  socket.send(JSON.stringify({ type: "welcome", id, tickRate }));
+  broadcast({ type: "snapshot", serverTick, players: [...players.values()] });
 
   socket.on("message", (raw) => {
     let message: ClientMessage;
@@ -36,21 +40,39 @@ wss.on("connection", (socket) => {
       return;
     }
 
-    if (message.type !== "move" || message.state.id !== id) return;
-    players.set(id, { ...player, ...message.state, id });
-    broadcast({ type: "snapshot", players: [...players.values()] });
+    if (message.type !== "input") return;
+    const input = message.input;
+    if (!Number.isFinite(input.forward) || !Number.isFinite(input.right) || !Number.isFinite(input.yaw)) return;
+    inputs.set(id, {
+      forward: Math.max(-1, Math.min(1, input.forward)),
+      right: Math.max(-1, Math.min(1, input.right)),
+      yaw: input.yaw,
+    });
   });
 
   socket.on("close", () => {
     players.delete(id);
-    console.log(`Player disconnected: ${id} (${players.size}/${maxPlayers})`);
-    broadcast({ type: "snapshot", players: [...players.values()] });
+    inputs.delete(id);
+    broadcast({ type: "snapshot", serverTick, players: [...players.values()] });
   });
 
-  socket.on("error", (error) => {
-    console.error(`WebSocket error for ${id}:`, error.message);
-  });
+  socket.on("error", (error) => console.error(`WebSocket error for ${id}:`, error.message));
 });
 
+setInterval(() => {
+  serverTick += 1;
+  const dt = tickMs / 1000;
+  for (const [id, player] of players) {
+    const input = inputs.get(id);
+    if (!input) continue;
+    const length = Math.hypot(input.forward, input.right);
+    const scale = length > 1 ? 1 / length : 1;
+    player.x += input.right * scale * moveSpeed * dt;
+    player.z -= input.forward * scale * moveSpeed * dt;
+    player.yaw = input.yaw;
+  }
+  broadcast({ type: "snapshot", serverTick, players: [...players.values()] });
+}, tickMs);
+
 wss.on("error", (error) => console.error("WebSocket server error:", error));
-console.log(`Ocenoid server listening on 0.0.0.0:${port} (max ${maxPlayers} players)`);
+console.log(`Ocenoid server listening on 0.0.0.0:${port} (max ${maxPlayers}, ${tickRate}Hz)`);
