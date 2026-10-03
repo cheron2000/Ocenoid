@@ -265,7 +265,7 @@ export function OcenoidCharacter({ target, appearance = CHARACTER_PRESETS[0], on
     const next = new THREE.Vector3(target.x, target.y, target.z);
     prev.current.copy(current.current);
     current.current.lerp(next, 1 - Math.exp(-12 * delta));
-    root.current.position.copy(current.current);
+    // root.current.position.copy(current.current);  // REMOVED to fix double-translation
     root.current.rotation.y = target.yaw;
 
     const speed  = prev.current.distanceTo(current.current) / Math.max(delta, 0.001);
