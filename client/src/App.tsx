@@ -11,15 +11,59 @@ type TargetMap = Map<string, Player>;
 const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? `ws://${window.location.hostname}:8787`;
 
 function ThirdPersonCamera({ target }: { target: THREE.Object3D | null }) {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
+  const yaw = useRef(0);
+  const pitch = useRef(0.28);
+  const distance = useRef(7.5);
+  const dragging = useRef(false);
   const current = useRef(new THREE.Vector3(0, 4.2, 7.5));
   const look = useRef(new THREE.Vector3());
+
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const onDown = (e: MouseEvent) => {
+      if (e.button === 2) {
+        dragging.current = true;
+        canvas.setPointerCapture(e.pointerId);
+      }
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging.current) return;
+      yaw.current -= e.movementX * 0.006;
+      pitch.current = THREE.MathUtils.clamp(pitch.current - e.movementY * 0.005, -0.15, 1.05);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.button === 2) dragging.current = false;
+      if (canvas.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      distance.current = THREE.MathUtils.clamp(distance.current + e.deltaY * 0.008, 3, 12);
+    };
+    const onContext = (e: MouseEvent) => e.preventDefault();
+    canvas.addEventListener("mousedown", onDown);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerup", onUp);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    canvas.addEventListener("contextmenu", onContext);
+    return () => {
+      canvas.removeEventListener("mousedown", onDown);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerup", onUp);
+      canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("contextmenu", onContext);
+    };
+  }, [gl]);
+
   useFrame((_, delta) => {
     if (!target) return;
-    const desired = new THREE.Vector3(0, 4.2, 7.5).applyQuaternion(target.quaternion).add(target.position);
-    current.current.lerp(desired, 1 - Math.exp(-7 * delta));
+    const offset = new THREE.Vector3(0, 0, distance.current);
+    offset.applyEuler(new THREE.Euler(pitch.current, yaw.current, 0, "YXZ"));
+    const desired = target.position.clone().add(new THREE.Vector3(0, 1.4, 0)).add(offset);
+    current.current.lerp(desired, 1 - Math.exp(-10 * delta));
     camera.position.copy(current.current);
-    look.current.lerp(new THREE.Vector3(target.position.x, target.position.y + 1.1, target.position.z), 1 - Math.exp(-10 * delta));
+    const targetLook = target.position.clone().add(new THREE.Vector3(0, 1.1, 0));
+    look.current.lerp(targetLook, 1 - Math.exp(-12 * delta));
     camera.lookAt(look.current);
   });
   return null;
@@ -102,7 +146,7 @@ export default function App() {
   }, [localId, tickRate]);
 
   return <main className="app">
-    <header className="hud"><strong>OCENOID</strong><span>LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.size}/4 · {tickRate}Hz · WASD</span>{connectionError && <span> · {connectionError}</span>}</header>
+    <header className="hud"><strong>OCENOID</strong><span>LAN: {localId ? "Connected" : "Connecting..."} · Players: {players.size}/4 · {tickRate}Hz · WASD · RMB Camera · Wheel Zoom</span>{connectionError && <span> · {connectionError}</span>}</header>
     <section className="scene"><Canvas camera={{ position: [0, 4.2, 7.5], fov: 55 }}>
       <color attach="background" args={["#07141d"]} /><ambientLight intensity={1.5} /><directionalLight position={[5, 10, 5]} intensity={2} />
       <World players={players} localId={localId} onLocalRef={setCameraTarget} />
